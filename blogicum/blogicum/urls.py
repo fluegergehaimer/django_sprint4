@@ -20,10 +20,6 @@ urlpatterns = [
     ),
     path('', include('blog.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-#if settings.DEBUG:
-#    import debug_toolbar
-#    # Добавить к списку urlpatterns список адресов из приложения debug_toolbar:
-#    urlpatterns += (path('__debug__/', include(debug_toolbar.urls)),)
 
 handler404 = 'pages.views.page_not_found'
 handler403 = 'pages.views.csrf_failure'
