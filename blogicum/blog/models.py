@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
@@ -15,6 +15,9 @@ class PublishedModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def __str__(self, field, *args, **kwargs):
+        return f'{field[:20]}'
 
 
 class Category(PublishedModel):
@@ -33,7 +36,7 @@ class Category(PublishedModel):
         verbose_name_plural = 'Категории'
 
     def __str__(self):
-        return f'{self.title[:20]} {self.description[:20]}'
+        return super().__str__(self.title, self.created_at, self.description)
 
 
 class Location(PublishedModel):
@@ -44,7 +47,7 @@ class Location(PublishedModel):
         verbose_name_plural = 'Местоположения'
 
     def __str__(self):
-        return self.name[:20]
+        return super().__str__(self.name, self.created_at)
 
 
 class Post(PublishedModel):
@@ -87,7 +90,7 @@ class Post(PublishedModel):
         ordering = ('-pub_date',)
 
     def __str__(self):
-        return f'{self.title[:20]} {self.author} {self.text[:20]}'
+        return super().__str__(self.title, self.author, self.text)
 
 
 class Comment(PublishedModel):
@@ -97,6 +100,7 @@ class Comment(PublishedModel):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
+        verbose_name='Публикация',
         related_name='comments',
     )
     author = models.ForeignKey(
@@ -112,4 +116,4 @@ class Comment(PublishedModel):
         ordering = ('created_at',)
 
     def __str__(self):
-        return self.text[:10]
+        return super().__str__(self.text)

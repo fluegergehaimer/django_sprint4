@@ -15,10 +15,6 @@ class PostForm(forms.ModelForm):
     class Meta:
         model = Post
         exclude = ('author', 'created_at',)
-        widgets = {
-            'text': forms.Textarea({'rows': '5'}),
-            'pub_date': forms.DateInput(attrs={'type': 'date'})
-        }
 
 
 class CommentForm(forms.ModelForm):
@@ -26,6 +22,3 @@ class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ('text',)
-        widgets = {
-            'text': forms.Textarea({'rows': '3'})
-        }

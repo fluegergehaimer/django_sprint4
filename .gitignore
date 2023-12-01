@@ -139,6 +139,7 @@ dmypy.json
 
 .vscode/
 *.code-workspace
+.blog_images
 
 # Local History for Visual Studio Code
 .history/
