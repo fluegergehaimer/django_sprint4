@@ -42,7 +42,6 @@ class EditView(LoginRequiredMixin):
 
 
 def posts_query_set(object):
-    """Вернуть все посты."""
     query_set = (
         object.select_related(
             "category",
@@ -56,7 +55,6 @@ def posts_query_set(object):
 
 
 def published_posts_query_set(object):
-    """Вернуть опубликованные посты."""
     query_set = posts_query_set(object).filter(
         pub_date__lte=timezone.now(),
         is_published=True,
@@ -185,7 +183,10 @@ class CommentMixin:
 
     def dispatch(self, request, *args, **kwargs):
         if self.get_object().author != request.user:
-            return redirect('blog:post_detail', self.kwargs.get('comment_id'))
+            return redirect(
+                'blog:post_detail',
+                self.kwargs.get('comment_id')
+            )
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -203,17 +204,13 @@ class CommentMixin:
 class CommentUpdateView(LoginRequiredMixin, CommentMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_edit'] = True
-        return context
+        return dict(**(super().get_context_data(**kwargs)), is_edit=True)
 
 
 class CommentDeleteView(LoginRequiredMixin, CommentMixin, DeleteView):
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_delete'] = True
-        return context
+        return dict(**(super().get_context_data(**kwargs)), is_delete=True)
 
 
 class IndexListView(ListView):
@@ -221,19 +218,7 @@ class IndexListView(ListView):
     template_name = 'blog/index.html'
     ordering = '-pub_date'
     paginate_by = POSTS_PER_PAGE
-    queryset = (
-        Post.objects.select_related(
-            "category",
-            "location",
-            "author",
-        )
-        .annotate(comment_count=Count('comments'))
-        .filter(
-            pub_date__lte=timezone.now(),
-            is_published=True,
-            category__is_published=True,
-        ).order_by('-pub_date')
-    )
+    queryset = published_posts_query_set(Post.objects)
 
 
 @login_required
