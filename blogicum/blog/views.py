@@ -37,30 +37,31 @@ class EditView(LoginRequiredMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if self.get_object().author != request.user:
-            return redirect('blog:post_detail', self.kwargs.get('post_id'))
+            return redirect(
+                'blog:post_detail',
+                post_id=self.kwargs[self.pk_url_kwarg]
+            )
         return super().dispatch(request, *args, **kwargs)
 
 
-def posts_query_set(object):
-    query_set = (
-        object.select_related(
-            "category",
-            "location",
-            "author",
+def posts_selection(posts):
+    return (
+        posts.select_related(
+            'category',
+            'location',
+            'author',
         )
-        .annotate(comment_count=Count("comments"))
-        .order_by("-pub_date")
+        .annotate(comment_count=Count('comments'))
+        .order_by('-pub_date')
     )
-    return query_set
 
 
-def published_posts_query_set(object):
-    query_set = posts_query_set(object).filter(
+def published_posts(posts):
+    return posts_selection(posts).filter(
         pub_date__lte=timezone.now(),
         is_published=True,
         category__is_published=True,
     )
-    return query_set
 
 
 class PostUpdateView(EditView, UpdateView):
@@ -86,25 +87,23 @@ class PostDeleteView(EditView, DeleteView):
 class PostDetailView(DetailView):
     model = Post
     template_name = 'blog/detail.html'
-    ordering = ('-pub_date',)
     paginate_by = POSTS_PER_PAGE
     pk_url_kwarg = 'post_id'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CommentForm()
-        context['comments'] = (
-            self.object.comments.select_related('post')
+        return dict(
+            **(super().get_context_data(**kwargs)),
+            form=CommentForm(),
+            comments=(self.object.comments.select_related('post'))
         )
-        return context
 
     def get_queryset(self):
         self.post_data = get_object_or_404(Post, pk=self.kwargs['post_id'])
         if self.post_data.author == self.request.user:
-            return posts_query_set(Post.objects).filter(
+            return posts_selection(Post.objects).filter(
                 pk=self.kwargs['post_id']
             )
-        return published_posts_query_set(Post.objects).filter(
+        return published_posts(Post.objects).filter(
             pk=self.kwargs['post_id']
         )
 
@@ -115,43 +114,46 @@ class CategoryListView(ListView):
     paginate_by = POSTS_PER_PAGE
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['category'] = get_object_or_404(
-            Category,
-            slug=self.kwargs['category_slug'],
-            is_published=True,
+        return dict(
+            **(super().get_context_data(**kwargs)),
+            category=get_object_or_404(
+                Category,
+                slug=self.kwargs['category_slug'],
+                is_published=True,
+            )
         )
-        return context
 
     def get_queryset(self):
-        category_slug = self.kwargs.get('category_slug')
-        category = get_object_or_404(
-            Category,
-            slug=category_slug,
-            is_published=True
+        return published_posts(
+            get_object_or_404(
+                Category,
+                slug=self.kwargs.get('category_slug'),
+                is_published=True
+            ).posts
         )
-        queryset = published_posts_query_set(category.posts)
-        return queryset
 
 
 class ProfileListView(ListView):
     model = Post
     template_name = 'blog/profile.html'
-    ordering = 'id'
     paginate_by = POSTS_PER_PAGE
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['profile'] = get_object_or_404(User, username=self.kwargs.get(
-            'username'
+        return dict(
+            **(super().get_context_data(**kwargs)),
+            profile=get_object_or_404(
+                User,
+                username=self.kwargs.get('username')
+            )
         )
-        )
-        return context
 
     def get_queryset(self):
-        author = get_object_or_404(User, username=self.kwargs.get('username'))
-        queryset = posts_query_set(author.posts)
-        return queryset
+        return posts_selection(
+            get_object_or_404(
+                User,
+                username=self.kwargs.get('username')
+            ).posts
+        )
 
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
@@ -165,7 +167,6 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        form.save()
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -179,19 +180,19 @@ class CommentMixin:
     form_class = CommentForm
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-    comment = None
+    post_instance = None
 
     def dispatch(self, request, *args, **kwargs):
         if self.get_object().author != request.user:
             return redirect(
                 'blog:post_detail',
-                self.kwargs.get('comment_id')
+                self.kwargs.get('post_id')
             )
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        form.instance.comment = self.comment
+        form.instance.comment = self.post_instance
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -216,9 +217,8 @@ class CommentDeleteView(LoginRequiredMixin, CommentMixin, DeleteView):
 class IndexListView(ListView):
     model = Post
     template_name = 'blog/index.html'
-    ordering = '-pub_date'
     paginate_by = POSTS_PER_PAGE
-    queryset = published_posts_query_set(Post.objects)
+    queryset = published_posts(Post.objects)
 
 
 @login_required

@@ -16,8 +16,8 @@ class PublishedModel(models.Model):
     class Meta:
         abstract = True
 
-    def __str__(self, field, *args, **kwargs):
-        return f'{field[:20]}'
+    def __str__(self):
+        return f'{self.is_published} {self.created_at} {super().__str__()}'
 
 
 class Category(PublishedModel):
@@ -36,7 +36,7 @@ class Category(PublishedModel):
         verbose_name_plural = 'Категории'
 
     def __str__(self):
-        return super().__str__(self.title, self.created_at, self.description)
+        return f'{self.title[:20]} {self.description[:20]} {super().__str__()}'
 
 
 class Location(PublishedModel):
@@ -47,7 +47,7 @@ class Location(PublishedModel):
         verbose_name_plural = 'Местоположения'
 
     def __str__(self):
-        return super().__str__(self.name, self.created_at)
+        return f'{self.name[:20]} {super().__str__()}'
 
 
 class Post(PublishedModel):
@@ -79,10 +79,11 @@ class Post(PublishedModel):
         related_name='posts',
         verbose_name='Категория',
     )
-    image = models.ImageField('Изображение',
-                              upload_to='blog_images',
-                              blank=True
-                              )
+    image = models.ImageField(
+        'Изображение',
+        upload_to='blog_images',
+        blank=True,
+    )
 
     class Meta:
         verbose_name = 'публикация'
@@ -90,7 +91,12 @@ class Post(PublishedModel):
         ordering = ('-pub_date',)
 
     def __str__(self):
-        return super().__str__(self.title, self.author, self.text)
+        return (
+            f'{self.title[:20]} '
+            f'{self.author[:20]} '
+            f'{self.text[:20]} '
+            f'{super().__str__()}'
+        )
 
 
 class Comment(PublishedModel):
@@ -116,4 +122,4 @@ class Comment(PublishedModel):
         ordering = ('created_at',)
 
     def __str__(self):
-        return super().__str__(self.text)
+        return f'{self.text[:20]} {super().__str__()}'
