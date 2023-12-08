@@ -49,11 +49,11 @@ def posts_selection(posts):
         'category',
         'location',
         'author',
-        ).annotate(
-          comment_count=Count('comments')
-        ).order_by(
-          '-pub_date'
-        )
+    ).annotate(
+      comment_count=Count('comments')
+    ).order_by(
+      '-pub_date'
+    )
 
 
 def published_posts(posts):
