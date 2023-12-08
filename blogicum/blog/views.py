@@ -45,15 +45,15 @@ class EditView(LoginRequiredMixin):
 
 
 def posts_selection(posts):
-    return (
-        posts.select_related(
-            'category',
-            'location',
-            'author',
+    return posts.select_related(
+        'category',
+        'location',
+        'author',
+        ).annotate(
+            comment_count=Count('comments')
+        ).order_by(
+            '-pub_date'
         )
-        .annotate(comment_count=Count('comments'))
-        .order_by('-pub_date')
-    )
 
 
 def published_posts(posts):
@@ -92,7 +92,7 @@ class PostDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         return dict(
-            **(super().get_context_data(**kwargs)),
+            **super().get_context_data(**kwargs),
             form=CommentForm(),
             comments=(self.object.comments.select_related('post'))
         )
@@ -180,7 +180,6 @@ class CommentMixin:
     form_class = CommentForm
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-    post_instance = None
 
     def dispatch(self, request, *args, **kwargs):
         if self.get_object().author != request.user:
@@ -192,7 +191,10 @@ class CommentMixin:
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        form.instance.comment = self.post_instance
+        form.instance.comment = get_object_or_404(
+            Post,
+            pk=self.kwargs['post_id']
+        )
         return super().form_valid(form)
 
     def get_success_url(self):

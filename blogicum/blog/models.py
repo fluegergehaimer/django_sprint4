@@ -17,7 +17,7 @@ class PublishedModel(models.Model):
         abstract = True
 
     def __str__(self):
-        return f'{self.is_published} {self.created_at} {super().__str__()}'
+        return f'{self.is_published} {self.created_at}'
 
 
 class Category(PublishedModel):
@@ -93,7 +93,7 @@ class Post(PublishedModel):
     def __str__(self):
         return (
             f'{self.title[:20]} '
-            f'{self.author[:20]} '
+            f'{self.author} '
             f'{self.text[:20]} '
             f'{super().__str__()}'
         )
