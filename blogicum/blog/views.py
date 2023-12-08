@@ -50,9 +50,9 @@ def posts_selection(posts):
         'location',
         'author',
     ).annotate(
-      comment_count=Count('comments')
+        comment_count=Count('comments')
     ).order_by(
-      '-pub_date'
+        '-pub_date'
     )
 
 
